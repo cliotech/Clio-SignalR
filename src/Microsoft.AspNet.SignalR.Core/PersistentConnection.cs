@@ -260,7 +260,7 @@ namespace Microsoft.AspNet.SignalR
 
             // We handle /start requests after the PersistentConnection has been initialized,
             // because ProcessStartRequest calls OnConnected.
-            if (IsStartRequest(context.Request))
+            if (IsStartRequest(context.Request) && !(Transport is WebSocketTransport))
             {
                 return ProcessStartRequest(context, connectionId);
             }
@@ -287,7 +287,17 @@ namespace Microsoft.AspNet.SignalR
                 return TaskAsyncHelper.FromMethod(() => OnDisconnected(context.Request, connectionId, stopCalled: clean).OrEmpty());
             };
 
-            return Transport.ProcessRequest(connection).OrEmpty().Catch(Trace, Counters.ErrorsAllTotal, Counters.ErrorsAllPerSec);
+            if (IsConnectRequest(context.Request) && (Transport is WebSocketTransport))
+            {
+                return OnConnected(context.Request, connectionId).OrEmpty()
+                    .Then(c => c.ConnectionsConnected.Increment(), Counters).Then(() => Transport.ProcessRequest(connection).OrEmpty()
+                    .Catch(Trace, Counters.ErrorsAllTotal, Counters.ErrorsAllPerSec).Then(() => connection.Send(connectionId, "OK")
+                            .Catch(Trace, Counters.ErrorsAllTotal, Counters.ErrorsAllPerSec)));
+            }
+
+
+            return Transport.ProcessRequest(connection).OrEmpty()
+                .Catch(Trace, Counters.ErrorsAllTotal, Counters.ErrorsAllPerSec);
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "We want to catch any exception when unprotecting data.")]
@@ -568,6 +578,11 @@ namespace Microsoft.AspNet.SignalR
         private static bool IsStartRequest(IRequest request)
         {
             return request.LocalPath.EndsWith("/start", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsConnectRequest(IRequest request)
+        {
+            return request.LocalPath.EndsWith("/connect", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsPingRequest(IRequest request)

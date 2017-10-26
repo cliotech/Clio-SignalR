@@ -35,7 +35,7 @@ namespace Microsoft.AspNet.SignalR.Client.Infrastructure
                                               IConnection connection,
                                               string connectionData,
                                               string transport,
-                                              CancellationToken disconnectToken, 
+                                              CancellationToken disconnectToken,
                                               TransportHelper transportHelper)
         {
             if (connection == null)
@@ -97,20 +97,25 @@ namespace Microsoft.AspNet.SignalR.Client.Infrastructure
             if (Interlocked.CompareExchange(ref _state, InitializationState.AfterConnect, InitializationState.Initial) ==
                 InitializationState.Initial)
             {
-                _transportHelper.GetStartResponse(_httpClient, _connection, _connectionData, _transport)
-                                .Then(response =>
-                                {
-                                    var started = _connection.JsonDeserializeObject<JObject>(response)["Response"];
-                                    if (started.ToString() == "started")
+                if (_transport.ToLower() == "websockets")
+                    _initializationInvoker.Invoke(CompleteStart);
+                else
+                {
+                    _transportHelper.GetStartResponse(_httpClient, _connection, _connectionData, _transport)
+                                    .Then(response =>
                                     {
-                                        _initializationInvoker.Invoke(CompleteStart);
-                                    }
-                                    else
-                                    {
-                                        Fail(new StartException(Resources.Error_StartFailed));
-                                    }
-                                })
-                                .Catch(ex => Fail(new StartException(Resources.Error_StartFailed, ex)), _connection);
+                                        var started = _connection.JsonDeserializeObject<JObject>(response)["Response"];
+                                        if (started.ToString() == "started")
+                                        {
+                                            _initializationInvoker.Invoke(CompleteStart);
+                                        }
+                                        else
+                                        {
+                                            Fail(new StartException(Resources.Error_StartFailed));
+                                        }
+                                    })
+                                    .Catch(ex => Fail(new StartException(Resources.Error_StartFailed, ex)), _connection);
+                }
             }
         }
 
@@ -134,7 +139,7 @@ namespace Microsoft.AspNet.SignalR.Client.Infrastructure
                 {
                     ex = new StartException(Resources.Error_StartFailed, ex);
                 }
- 
+
                 _initializationTask.TrySetUnwrappedException(ex);
             });
 

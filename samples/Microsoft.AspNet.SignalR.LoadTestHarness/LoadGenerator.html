@@ -25,7 +25,7 @@
     <script src="Scripts/jquery.signalR.js"></script>
     <script>
         (function () {
-            var connection = $.connection("TestConnection"),
+            var connection = $.connection("/TestConnection"),
                 connected = false,
                 $status = $("#status"),
                 $disconnect = $("#disconnect"),
@@ -35,7 +35,7 @@
                 interval = null;
 
             function connect() {
-                connection.start(function () {
+                connection.start({ transport: ['webSockets'] }).done(function () {
                     connected = true;
                 });
             }

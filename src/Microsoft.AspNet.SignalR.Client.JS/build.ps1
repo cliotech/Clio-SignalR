@@ -16,6 +16,7 @@ $files =
 # Run JSHint against files
 Write-Host "Running JSHint..." -ForegroundColor Yellow
 foreach ($file in $files) {
+    Test-Path $file
     Write-Host "$file... " -NoNewline
     $output = "build-output.txt"
     & "cscript.exe" ..\..\tools\jshint\env\wsh.js "$file" > $output
