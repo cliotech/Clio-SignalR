@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Hubs;
 
@@ -11,6 +12,11 @@ namespace Microsoft.AspNet.SignalR.LoadTestHarness
     public class TestConnection : PersistentConnection
     {
         internal static ConnectionBehavior Behavior { get; set; }
+
+        protected override Task OnNegotiate(IRequest request, string connectionId)
+        {
+            return base.OnNegotiate(request, connectionId).ContinueWith(t => Debug.WriteLine($"OnNegotiate connectionId:{connectionId}"));
+        }
 
         protected override Task OnConnected(IRequest request, string connectionId)
         {

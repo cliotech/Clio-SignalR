@@ -27,6 +27,35 @@ namespace Microsoft.AspNet.SignalR
     /// </summary>
     public abstract class PersistentConnection
     {
+        internal class NegotiateResponse
+        {
+            public string Url { get; }
+            public string ConnectionToken { get; }
+            public string ConnectionId { get; }
+            public double? KeepAliveTimeout { get; }
+            public double DisconnectTimeout { get; }
+            public double ConnectionTimeout { get; }
+            public bool TryWebSockets { get; }
+            public string ProtocolVersion { get; }
+            public double TransportConnectTimeout { get; }
+            public double LongPollDelay { get; }
+
+            public NegotiateResponse(string url, string connectionToken, string connectionId, double? keepAliveTimeout, double disconnectTimeout, double connectionTimeout, bool tryWebSockets, string protocolVersion, double transportConnectTimeout, double longPollDelay)
+            {
+                Url = url;
+                ConnectionToken = connectionToken;
+                ConnectionId = connectionId;
+                KeepAliveTimeout = keepAliveTimeout;
+                DisconnectTimeout = disconnectTimeout;
+                ConnectionTimeout = connectionTimeout;
+                TryWebSockets = tryWebSockets;
+                ProtocolVersion = protocolVersion;
+                TransportConnectTimeout = transportConnectTimeout;
+                LongPollDelay = longPollDelay;
+            }
+        }
+
+
         private const string WebSocketsTransportName = "webSockets";
         private const string PingJsonPayload = "{ \"Response\": \"pong\" }";
         private const string StartJsonPayload = "{ \"Response\": \"started\" }";
@@ -202,7 +231,7 @@ namespace Microsoft.AspNet.SignalR
 
             if (IsNegotiationRequest(context.Request))
             {
-                return ProcessNegotiationRequest(context);
+                return ProcessNegotiationRequest(context).Then(x => OnNegotiate(context.Request, x.ConnectionId));
             }
             else if (IsPingRequest(context.Request))
             {
@@ -452,6 +481,17 @@ namespace Microsoft.AspNet.SignalR
         }
 
         /// <summary>
+        /// Called after negotiate response.
+        /// </summary>
+        /// <param name="request">The <see cref="IRequest"/> for the current connection.</param>
+        /// <param name="connectionId">The id of the connecting client.</param>
+        /// <returns>A <see cref="Task"/> that completes when the connect operation is complete.</returns>
+        protected virtual Task OnNegotiate(IRequest request, string connectionId)
+        {
+            return TaskAsyncHelper.Empty;
+        }
+
+        /// <summary>
         /// Called when a new connection is made.
         /// </summary>
         /// <param name="request">The <see cref="IRequest"/> for the current connection.</param>
@@ -507,28 +547,24 @@ namespace Microsoft.AspNet.SignalR
             return SendJsonResponse(context, PingJsonPayload);
         }
 
-        private Task ProcessNegotiationRequest(HostContext context)
+        private Task<NegotiateResponse> ProcessNegotiationRequest(HostContext context)
         {
             // Total amount of time without a keep alive before the client should attempt to reconnect in seconds.
             var keepAliveTimeout = _configurationManager.KeepAliveTimeout();
             string connectionId = Guid.NewGuid().ToString("d");
             string connectionToken = connectionId + ':' + GetUserIdentity(context);
 
-            var payload = new
-            {
-                Url = context.Request.LocalPath.Replace("/negotiate", ""),
-                ConnectionToken = ProtectedData.Protect(connectionToken, Purposes.ConnectionToken),
-                ConnectionId = connectionId,
-                KeepAliveTimeout = keepAliveTimeout != null ? keepAliveTimeout.Value.TotalSeconds : (double?)null,
-                DisconnectTimeout = _configurationManager.DisconnectTimeout.TotalSeconds,
-                ConnectionTimeout = _configurationManager.ConnectionTimeout.TotalSeconds,
-                TryWebSockets = _transportManager.SupportsTransport(WebSocketsTransportName) && context.Environment.SupportsWebSockets(),
-                ProtocolVersion = _protocolResolver.Resolve(context.Request).ToString(),
-                TransportConnectTimeout = _configurationManager.TransportConnectTimeout.TotalSeconds,
-                LongPollDelay = _configurationManager.LongPollDelay.TotalSeconds
-            };
+            var response = new NegotiateResponse(context.Request.LocalPath.Replace("/negotiate", ""),
+                ProtectedData.Protect(connectionToken, Purposes.ConnectionToken), connectionId,
+                keepAliveTimeout?.TotalSeconds,
+                _configurationManager.DisconnectTimeout.TotalSeconds,
+                _configurationManager.ConnectionTimeout.TotalSeconds,
+                _transportManager.SupportsTransport(WebSocketsTransportName) && context.Environment.SupportsWebSockets(),
+                _protocolResolver.Resolve(context.Request).ToString(),
+                _configurationManager.TransportConnectTimeout.TotalSeconds,
+                _configurationManager.LongPollDelay.TotalSeconds);
 
-            return SendJsonResponse(context, JsonSerializer.Stringify(payload));
+            return SendJsonResponse(context, JsonSerializer.Stringify(response)).ContinueWith(t => response);
         }
 
         // Avoid async/await in SignalR 2.X due to https://github.com/SignalR/SignalR/issues/3116

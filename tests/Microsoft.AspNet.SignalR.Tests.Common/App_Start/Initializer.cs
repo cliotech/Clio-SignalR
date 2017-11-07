@@ -186,6 +186,7 @@ namespace Microsoft.AspNet.SignalR.Tests.Common
             app.MapSignalR<FallbackToLongPollingConnectionThrows>("/fall-back-throws", config);
             app.MapSignalR<PreserializedJsonConnection>("/preserialize", config);
             app.MapSignalR<AsyncOnConnectedConnection>("/async-on-connected", config);
+            app.MapSignalR<SomeWorkOnNegotiateConnection>("/some-work-on-negotiate", config);
 
             // This subpipeline is protected by basic auth
             app.Map("/basicauth", map =>
