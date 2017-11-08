@@ -89,7 +89,7 @@ namespace Microsoft.AspNet.SignalR.Client.Samples
             await hubProxy.Invoke("multipleCalls");
         }
 
-        private async Task RunRawConnection(string serverUrl)
+        public async Task RunRawConnection(string serverUrl)
         {
             string url = serverUrl + "raw-connection";
 

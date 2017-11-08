@@ -24,6 +24,40 @@ namespace Microsoft.AspNet.SignalR.Tests
 {
     public class PersistentConnectionFacts
     {
+        public class OnNegotiateAsync : HostedTest
+        {
+
+            [Theory]
+            [InlineData(HostType.Memory, TransportType.LongPolling, MessageBusType.Fake)]
+            [InlineData(HostType.HttpListener, TransportType.Websockets, MessageBusType.Default)]
+            public async Task ConnectionWithOverrideOnNegotiateShouldRunTaskToCompletion(HostType hostType, TransportType transportType, MessageBusType messageBusType)
+            {
+                using (var host = CreateHost(hostType, transportType))
+                {
+                    host.Initialize(messageBusType: messageBusType);
+
+                    var connection = CreateConnection(host, "/some-work-on-negotiate");
+                    var results = new List<string>();
+                    connection.Received += data =>
+                    {
+                        results.Add(data);
+                    };
+
+                    await connection.Start(host.Transport);
+                    connection.SendWithTimeout("");
+
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+
+                    connection.Stop();
+
+                    Debug.WriteLine(string.Join(", ", results));
+
+                    Assert.Equal(1, results.Count);
+                    Assert.Equal(true, bool.Parse(results[0]));
+                }
+            }
+        }
+
         public class OnConnectedAsync : HostedTest
         {
             [Fact]
@@ -174,7 +208,7 @@ namespace Microsoft.AspNet.SignalR.Tests
                     }
                 }
             }
-            
+
             [Fact]
             public async Task SendToGroupFromOutsideOfConnection()
             {
@@ -206,7 +240,7 @@ namespace Microsoft.AspNet.SignalR.Tests
                             wh1.Set();
                         };
 
-                        await connectionContext.Groups.Add(connection1.ConnectionId, "Foo");                        
+                        await connectionContext.Groups.Add(connection1.ConnectionId, "Foo");
                         await connectionContext.Groups.Send("Foo", "yay");
                         Assert.True(await wh1.WaitAsync(TimeSpan.FromSeconds(10)));
                     }

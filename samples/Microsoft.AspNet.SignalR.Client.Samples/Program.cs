@@ -14,7 +14,8 @@ namespace Microsoft.AspNet.SignalR.Client.Samples
         {
             var writer = Console.Out;
             var client = new CommonClient(writer);
-            client.RunAsync("http://localhost:40476/").Wait();
+            //client.RunAsync("http://localhost:40476/").Wait();
+            client.RunRawConnection("http://localhost:8080/");
 
             Console.ReadKey();
         }

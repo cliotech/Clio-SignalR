@@ -134,10 +134,16 @@
             window.clearTimeout(that.transportTimeoutHandle);
 
             connection.log(transport.name + " transport connected. Initiating start request.");
-            signalR.transports._logic.ajaxStart(connection, function () {
+            if (transport.name === "webSockets") {
                 that.startCompleted = true;
                 onSuccess();
-            });
+            }
+            else {
+                signalR.transports._logic.ajaxStart(connection, function () {
+                    that.startCompleted = true;
+                    onSuccess();
+                });
+            }
         },
 
         transportFailed: function (transport, error, onFallback) {
@@ -445,11 +451,11 @@
 
         ajaxStart: function (connection, onSuccess) {
             var rejectDeferred = function (error) {
-                    var deferred = connection._deferral;
-                    if (deferred) {
-                        deferred.reject(error);
-                    }
-                },
+                var deferred = connection._deferral;
+                if (deferred) {
+                    deferred.reject(error);
+                }
+            },
                 triggerStartError = function (error) {
                     connection.log("The start request failed. Stopping the connection.");
                     $(connection).triggerHandler(events.onError, [error]);
