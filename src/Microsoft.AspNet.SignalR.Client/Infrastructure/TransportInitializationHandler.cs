@@ -97,7 +97,7 @@ namespace Microsoft.AspNet.SignalR.Client.Infrastructure
             if (Interlocked.CompareExchange(ref _state, InitializationState.AfterConnect, InitializationState.Initial) ==
                 InitializationState.Initial)
             {
-                if (_transport.ToLower() == "websockets")
+                if (_transport.ToUpperInvariant() == "WEBSOCKETS")
                     _initializationInvoker.Invoke(CompleteStart);
                 else
                 {
