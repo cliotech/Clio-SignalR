@@ -160,7 +160,7 @@ namespace Microsoft.AspNet.SignalR.Client.Infrastructure
 
         private static string Trim(StringBuilder urlStringBuilder)
         {
-            Debug.Assert(urlStringBuilder[urlStringBuilder.Length - 1] == '&', 
+            Debug.Assert(urlStringBuilder[urlStringBuilder.Length - 1] == '&',
                 "expected & at the end of the url");
 
             urlStringBuilder.Length--;
@@ -208,7 +208,7 @@ namespace Microsoft.AspNet.SignalR.Client.Infrastructure
                 urlStringBuilder
                     .Append("messageId=")
                     .Append(Uri.EscapeDataString(messageId))
-                    .Append("&");                
+                    .Append("&");
             }
         }
 
@@ -277,11 +277,13 @@ namespace Microsoft.AspNet.SignalR.Client.Infrastructure
         public static Uri ConvertToWebSocketUri(string uriString)
         {
             var uriBuilder = new UriBuilder(uriString);
+            if (uriBuilder.Scheme == "wss" || uriBuilder.Scheme == "ws")
+                return uriBuilder.Uri;
 
             if (uriBuilder.Scheme != "http" && uriBuilder.Scheme != "https")
             {
                 throw new InvalidOperationException(
-                    string.Format(CultureInfo.CurrentCulture, Resources.Error_InvalidUriScheme, uriBuilder.Scheme));    
+                    string.Format(CultureInfo.CurrentCulture, Resources.Error_InvalidUriScheme, uriBuilder.Scheme));
             }
 
             uriBuilder.Scheme = uriBuilder.Scheme == "https" ? "wss" : "ws";

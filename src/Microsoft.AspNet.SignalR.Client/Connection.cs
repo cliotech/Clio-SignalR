@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNet.SignalR.Client.Http;
 using Microsoft.AspNet.SignalR.Client.Infrastructure;
 using Microsoft.AspNet.SignalR.Client.Transports;
@@ -189,7 +190,7 @@ namespace Microsoft.AspNet.SignalR.Client
             DeadlockErrorTimeout = TimeSpan.FromSeconds(10);
 
             // Current client protocol
-            Protocol = new Version(1, 4);
+            Protocol = new Version(1, 5);
         }
 
         /// <summary>
@@ -463,10 +464,24 @@ namespace Microsoft.AspNet.SignalR.Client
 
                 _transport = transport;
 
-                _connectTask = Negotiate(transport);
+                if (transport.Name.ToUpperInvariant() == "WEBSOCKETS" && QueryString.Contains("rawWs=true"))
+                    _connectTask = StartRawWs();
+                else
+                    _connectTask = Negotiate(transport);
             }
 
             return _connectTask;
+        }
+
+        private Task StartRawWs()
+        {
+            _disconnectTimeout = TimeSpan.FromSeconds(30);
+            _totalTransportConnectTimeout = TimeSpan.FromSeconds(30);
+            // Default the beat interval to be 5 seconds in case keep alive is disabled.
+            var beatInterval = TimeSpan.FromSeconds(10);
+            _reconnectWindow = _disconnectTimeout;
+            Monitor = new HeartbeatMonitor(this, _stateLock, beatInterval);
+            return StartTransport();
         }
 
         protected virtual string OnSending()
@@ -598,7 +613,7 @@ namespace Microsoft.AspNet.SignalR.Client
         public void Stop(Exception error, TimeSpan timeout)
         {
             OnError(error);
-            Stop(timeout);            
+            Stop(timeout);
         }
 
         /// <summary>
@@ -845,7 +860,7 @@ namespace Microsoft.AspNet.SignalR.Client
             // the server during negotiation.
             // If the client tries to reconnect for longer the server will likely have deleted its ConnectionId
             // topic along with the contained disconnect message.
-            _disconnectTimeoutOperation = 
+            _disconnectTimeoutOperation =
                 SetTimeout(
                     _disconnectTimeout,
                     () =>

@@ -90,7 +90,7 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
             // TODO: Revisit thread safety of this assignment
             _webSocketTokenSource = new CancellationTokenSource();
             _webSocket = new ClientWebSocket();
-
+            
             _connection.PrepareRequest(new WebSocketWrapperRequest(_webSocket, _connection));
 
             CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_webSocketTokenSource.Token, _disconnectToken);
