@@ -20,8 +20,8 @@ namespace WsConnectionClient
             Console.ReadKey();
 
             var url = "wss://csmqa1.fihtrader.com/csmstream";
-            var connectionToken = @"UDXgq6DJT2HYfLHsFPNK%2BT14DxeFPtqjUYCUYmQTZdG8UCYV52%2B4X1vO06MhN9VpzQcFvSG5yNQ1Hz7HzfzQ1tMqtCO8aoSv24mKvWoLh8LCTJGa";
-            var jwt = @"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6IjE4OTMyMDgiLCJyb2xlIjoiRlhuZXRfQ3VzdG9tZXJzIiwiU2Vzc2lvbklEIjoiMmMyYmFhMjEtNmEzMC00YmZhLTk3ZDEtNDQ5Y2YwNDgxMTIxIiwiQXBwbGljYXRpb25JRCI6IjIwIiwiQWNjb3VudE51bWJlciI6IjE4OTMyMDgiLCJuYmYiOjE1ODU5MDQzMjksImV4cCI6MTU4NTk0NzUyOSwiaWF0IjoxNTg1OTA0MzI5LCJhdWQiOiJodHRwczovL3RyYWRlcnFhMS5pZm9yZXguY29tIn0.vVbnqd1aL9NtVXLDTTdyxJOfqw0UGJZTHgevuyJc2j4";
+            var connectionToken = @"LU/WNPD/na3OfAWr1Qxt0HBWtl2flN8zoH6rWr/djWQnHPieV8SU7L4v9+QPoc6rQK50mntDj4J/sCoj49UD1BkK5AoJtHlOldxLPxb+AFMLIT+A";
+            var jwt = @"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6IjE3NDUxMjkiLCJyb2xlIjoiRlhuZXRfQ3VzdG9tZXJzIiwiU2Vzc2lvbklEIjoiY2IzOTAxMjktZjdlNS00Y2ZiLTg3YzktZjg2NGI5YTYwZjViIiwiQXBwbGljYXRpb25JRCI6IjIwIiwiQWNjb3VudE51bWJlciI6IjE3NDUxMjkiLCJuYmYiOjE1ODcwMjY1NTIsImV4cCI6MTU4NzA2OTc1MiwiaWF0IjoxNTg3MDI2NTUyLCJhdWQiOiJodHRwczovL3RyYWRlcnFhMS52ZXN0bGUuY29tIn0.GcYdb_qUCx9atRNYTHeNih4r-Le1wW9mH_JkJ-nyjR0";
 
             _client = new CsmPushLoadClient(state => Console.WriteLine(state), count => Console.Title = $@"Total Csm Updates:{count}");
             await _client.Connect(url, connectionToken, jwt);
@@ -52,6 +52,7 @@ namespace WsConnectionClient
             private readonly Stopwatch _sw = new Stopwatch();
 
             public double ConnectTillConnectedMs => _connectTillConnectedMs;
+
             public double ConnectTillFirstClientStateMs => _connectTillFirstClientStateMs;
             public double AvgUpdateFrequencyMs => _samples.Average();
             public double MaxUpdateFrequencyMs => _samples.Max();
@@ -82,7 +83,8 @@ namespace WsConnectionClient
 
         public async Task Connect(string url, string connectionToken, string jwt)
         {
-            var query = $"rawWs=true&connectionToken={connectionToken}&jwt={jwt}";
+            var query = $"rawWs=true&connectionToken={Uri.EscapeDataString(connectionToken)}&jwt={jwt}";
+
             _connection = new Connection(url, query);
             _connection.StateChanged += Connection_StateChanged;
             _connection.Received += Connection_Received;
