@@ -189,11 +189,12 @@ namespace Microsoft.AspNet.SignalR.Transports
             }
         }
 
-        private void OnClosed()
+        private async void OnClosed()
         {
             Trace.TraceInformation("CloseSocket({0})", ConnectionId);
 
             // Require a request to /abort to stop tracking the connection. #2195
+            await Abort();
             _isAlive = false;
         }
 
