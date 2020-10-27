@@ -143,7 +143,8 @@ namespace Microsoft.AspNet.SignalR.Transports
                 return _context.Response.End(Resources.Error_NotWebSocketRequest);
             }
 
-            Action<IWebSocket> prepareWebSocket = socket => {
+            Action<IWebSocket> prepareWebSocket = socket =>
+            {
                 _socket = socket;
                 socket.OnClose = _closed;
                 socket.OnMessage = _message;
@@ -189,12 +190,12 @@ namespace Microsoft.AspNet.SignalR.Transports
             }
         }
 
-        private async void OnClosed()
+        private void OnClosed()
         {
             Trace.TraceInformation("CloseSocket({0})", ConnectionId);
 
             // Require a request to /abort to stop tracking the connection. #2195
-            await Abort();
+            Task.WaitAll(Abort());
             _isAlive = false;
         }
 
