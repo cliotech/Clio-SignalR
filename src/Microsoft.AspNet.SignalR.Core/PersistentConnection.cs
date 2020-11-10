@@ -320,7 +320,7 @@ namespace Microsoft.AspNet.SignalR
             {
                 return OnConnected(context.Request, connectionId).OrEmpty()
                     .Then(c => c.ConnectionsConnected.Increment(), Counters).Then(() => Transport.ProcessRequest(connection).OrEmpty()
-                    .Catch(Trace, Counters.ErrorsAllTotal, Counters.ErrorsAllPerSec).Then(() => connection.Send(connectionId, "OK")
+                    .Catch(Trace, Counters.ErrorsAllTotal, Counters.ErrorsAllPerSec).Then(() => (Transport as WebSocketTransport).KeepAlive()
                             .Catch(Trace, Counters.ErrorsAllTotal, Counters.ErrorsAllPerSec)));
             }
 
